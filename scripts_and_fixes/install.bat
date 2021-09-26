@@ -13,20 +13,20 @@ exit 1
 :GOT_GIT
 
 ECHO "Installing python modules used by the editor, old versions because of Ren'Py's python2.7 requirement"
-CD game\RVRE
+CD game
 
 python -m pip install --target python-packages "pyperclip"
 python -m pip install --target python-packages "pygments==2.5.2"
 python -m pip install --target python-packages "pyspellchecker==0.5.6"
 python -m pip install --target python-packages "gitpython==2.1.11"
-CP pygments_filters_init_py_replacement python-packages\pygments\filters\__init__.py
+CP RVRE\scripts_and_fixes\pygments_filters_init_py_replacement python-packages\pygments\filters\__init__.py
 CD ..\..
 
 ECHO
 ECHO "Installing codeface fonts"
 
 git submodule update --init --recursive
-CP game\RVRE\list_of_codeface_fonts_to_include.txt .git\modules\game\RVRE\modules\codeface\info\sparse-checkout
+CP game\RVRE\scripts_and_fixes\list_of_codeface_fonts_to_include.txt .git\modules\game\RVRE\modules\codeface\info\sparse-checkout
 git -C game\RVRE\codeface config core.sparseCheckout true
 git -C game\RVRE\codeface read-tree -m -u HEAD
 
