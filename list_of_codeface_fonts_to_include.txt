@@ -1,6 +1,3 @@
-# Add fonts to include from https://github.com/chrissimpkins/codeface
-# credits to authors, license included in the respective directories
-
 fonts/proggy-clean
 fonts/inconsolata/
 fonts/hack/
@@ -8,4 +5,3 @@ fonts/hasklig/
 fonts/office-code-pro
 fonts/source-code-pro
 fonts/anonymous-pro
-
