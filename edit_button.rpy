@@ -48,17 +48,17 @@ init -1700 python in _editor:
                      "20": (192.0, 49.1), # line length, height
                      "30": (128.0, 33.8),
                      "40": (96.0, 25.0),
-                     "dir": "codeface/fonts/inconsolata"},
+                     "dir": "RVRE/codeface/fonts/inconsolata"},
                  "ProggyClean": {
                      "20": (213.5, 63.6),
                      "30": (147.5, 43.3),
                      "40": (106.6, 32.7),
-                     "dir": "codeface/fonts/proggy-clean"},
+                     "dir": "RVRE/codeface/fonts/proggy-clean"},
                  "SourceCodePro-Regular": {
                      "20": (160.0, 41.4),
                      "30": (106.5, 27.7),
                      "40": (80.0, 21.0),
-                     "dir": "codeface/fonts/source-code-pro"
+                     "dir": "RVRE/codeface/fonts/source-code-pro"
                  }}
                      #"h": (30.000, -13.887, 2.673),
                      #"v": (35.967, -17.041, 2.654),
@@ -421,6 +421,8 @@ init -1700 python in _editor:
 
         def search(self):
             if self.search_string is not "":
+                self.search_string = re.sub(r'(?!\\)(\\\\)*\$$', r'$1(?=\n)', self.search_string)
+                self.search_string = re.sub(r'^\^', r'(?<\n)', self.search_string)
                 sx, sy, ex, ey = self.cursor2buf_coords(*self.console.ordered_cursor_coordinates())
                 self.find_downstream = re.finditer(self.search_string, "\n".join(self.data[:sy-1]) + "\n" + self.data[sy][:(sx + len(self.search_string) - 1)])
                 self.find_upstream = re.finditer(self.search_string, self.data[sy][sx:] + "\n" + "\n".join(self.data[sy+1:]))
@@ -481,13 +483,6 @@ init -1700 python in _editor:
 
         def __init__(self, *a, **b):
             self.context_options = []
-            if "context_menu" not in b:
-                self.setup_default_context_menu()
-            else:
-                for opt in b["context_menu"][0]:
-                    self.context_options.append(opt)
-                self.context_menu_handler = b["context_menu"][1]
-                del b["context_menu"]
             super(Editor, self).__init__(a, b)
             self.is_visible = False
 
@@ -510,6 +505,7 @@ init -1700 python in _editor:
             return (Editor.cx, Editor.cy, Editor.CX, Editor.CY, selection)
 
         def setup_default_context_menu(self):
+            self.context_options = []
             inconsolata = {"name": "Inconsolata-Regular", "submenu": [20,30,40]}
             proggy = {"name": "ProggyClean", "submenu": [20,30,40]}
             scpro = {"name": "SourceCodePro-Regular", "submenu": [20,30,40]}
@@ -617,9 +613,18 @@ init -1700 python in _editor:
                     Editor.CX, Editor.CY, Editor.cx, Editor.cy = Editor.cx, Editor.cy, Editor.CX, Editor.CY
                     Editor.is_mouse_pressed = False
 
-        def start(self, ctxt, offset=2):
+        def start(self, ctxt, offset=2, context_menu=None):
             (fname, lnr) = ctxt
             if fname: # no fname indicates failure
+                if context_menu is None:
+                    devlog.warn("Default")
+                    self.setup_default_context_menu()
+                else:
+                    devlog.warn("Editor_button")
+                    self.context_options = [];
+                    for opt in context_menu[0]:
+                        self.context_options.append(opt)
+                    self.context_menu_handler = context_menu[1]
                 lnr = lnr - 1
                 Editor.fname = os.path.join(renpy.config.basedir, fname)
 
@@ -817,7 +822,7 @@ init 1701 python in _editor:
 
     def dev_add_editor(pick):
         global editor
-        if pick is "Insert editor button here":
+        if pick is "Add editor button":
             editor.view.insert(["""
         if config.developer and _editor.editor:
             textbutton _("Edit") action [_editor.editor.start(renpy.get_filename_line()), ShowMenu('_editor_main')]
@@ -833,11 +838,11 @@ init 1701 python in _editor:
                 return
 
         if in_editor:
-            editor.start(file_line)
+            editor.start(file_line, context_menu=((purpose,), dev_add_editor) if purpose is "Add editor button" else None)
             if search is not None:
                 editor.view.search_string=search
             editor.view.search()
-            renpy.call_screen("_editor_main", context_menu=(purpose, dev_add_editor) if purpose is "Add editor button" else None)
+            renpy.call_screen("_editor_main")
         else:
             renpy.jump(file_line)
 
@@ -881,7 +886,7 @@ screen _editor_menu(selection):
         key "K_ESCAPE" action Function("renpy.hide_screen", "_editor_menu", layer=selection.layer)
 
 
-screen _editor_main(*args, **kwargs):
+screen _editor_main:
     layer "master"
     default editor = _editor.editor
     default view = editor.view
@@ -889,7 +894,7 @@ screen _editor_main(*args, **kwargs):
         padding (0, 0)
         pos (0, 0)
         background view.data.get_color("background")
-        add editor(*args, **kwargs)
+        add editor
         text view.display() font _editor.get_font() size view.font['size'] justify False kerning 0.0 line_leading 0 newline_indent False #adjust_spacing False
         if view.show_errors:
             window:

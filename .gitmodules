@@ -1,3 +1,7 @@
 [submodule "codeface"]
 	path = codeface
 	url = https://github.com/chrissimpkins/codeface.git
+[submodule "python-packages/spellchecker"]
+	path = python-packages/spellchecker
+	url = https://github.com/barrust/pyspellchecker.git
+	sparseCheckout = true

@@ -17,6 +17,7 @@ cp RVRE/scripts_and_fixes/pygments_filters_init_py_replacement python-packages/p
 # to python-packages/spellchecker/resources/ (just click the files and save-as to the folder)
 
 cd -
+ln -s game/python-packages/
 
 echo
 echo "Installing codeface fonts" 1>&2

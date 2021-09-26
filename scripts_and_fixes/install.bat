@@ -21,6 +21,8 @@ python -m pip install --target python-packages "pyspellchecker==0.5.6"
 python -m pip install --target python-packages "gitpython==2.1.11"
 CP RVRE\scripts_and_fixes\pygments_filters_init_py_replacement python-packages\pygments\filters\__init__.py
 CD ..\..
+MKDIR python-packages
+CP /E/H game\python-packages\spellchecker python-packages
 
 ECHO
 ECHO "Installing codeface fonts"

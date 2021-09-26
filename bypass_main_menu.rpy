@@ -7,7 +7,7 @@ init 1801 python in _editor:
     # TODO: Remove this first option after the edit button was added
     ("Add editor button: right click (mouse) between the yalign line and the first textbutton in screen quick_menu().", {
         "file_line": ("game/screens.rpy", 1),
-        "search": "^screen\s+quick_menu(",
+        "search": "^screen\s+quick_menu\(",
         "in_editor": True,
         "purpose": "Add editor button"
     }),
@@ -15,8 +15,7 @@ init 1801 python in _editor:
         "label": "start"
     }),
     ("Edit the options in this development jump menu.", {
-        "search": "^\s*dev_jump_options\s*=\s*\[",
-        "modus": "editor"
+        "search": "^\s*dev_jump_options\s*=\s*\["
     }))
 
     def dev_menu():
