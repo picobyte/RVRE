@@ -8,8 +8,6 @@ init -1700 python in _editor:
     from RVRE import *
     #import visual_runtime_editor
 
-    # further specified when formatter is loaded (RenpyBuffer)
-
 
     class RenPyBuffer(ReadWriteBuffer):
         """ layer formating to display a text buffer in a ren'py screen """
@@ -473,8 +471,7 @@ init -1700 python in _editor:
             renpy.redraw(self.console, 0)
 
     class Editor(renpy.Displayable):
-        mousex = mousey = fname = view = context_menu = None
-        context_options = []
+        mousex = mousey = fname = view = None
         buffer = {}
         timer = time()
         is_mouse_pressed = False
@@ -483,15 +480,15 @@ init -1700 python in _editor:
         original_title = None
 
         def __init__(self, *a, **b):
+            self.context_options = []
+            if "context_menu" not in b:
+                self.setup_default_context_menu()
+            else:
+                for opt in b["context_menu"][0]:
+                    self.context_options.append(opt)
+                self.context_menu_handler = b["context_menu"][1]
+                del b["context_menu"]
             super(Editor, self).__init__(a, b)
-            inconsolata = {"name": "Inconsolata-Regular", "submenu": [20,30,40]}
-            proggy = {"name": "ProggyClean", "submenu": [20,30,40]}
-            scpro = {"name": "SourceCodePro-Regular", "submenu": [20,30,40]}
-            Editor.context_options.append({"name": "font", "submenu": [inconsolata, proggy, scpro]})
-            Editor.context_options.append({ "name": "language", "submenu": ["de", "en", "es", "fr", "pt", "ru"] })
-            Editor.context_options.append({"name": "style", "submenu": ["abap", "algol_nu", "arduino", "autumn", "borland", "colorful", "default", "emacs", "friendly", "fruity", "igor", "inkpot", "lovelace", "manni", "monokai", "murphy", "native", "pastie", "perldoc", "rainbow_dash", "rrt", "sas", "tango", "vim", "vs", "xcode"] })
-            # also present but problematic:
-            # "paraiso_dark", "paraiso_light", "stata_dark", "stata_light", "solarized", "trac", "bw", "algol", 
             self.is_visible = False
 
         @staticmethod
@@ -511,6 +508,29 @@ init -1700 python in _editor:
                 elif cx == CX:
                     selection = False
             return (Editor.cx, Editor.cy, Editor.CX, Editor.CY, selection)
+
+        def setup_default_context_menu(self):
+            inconsolata = {"name": "Inconsolata-Regular", "submenu": [20,30,40]}
+            proggy = {"name": "ProggyClean", "submenu": [20,30,40]}
+            scpro = {"name": "SourceCodePro-Regular", "submenu": [20,30,40]}
+            self.context_options.append({"name": "font", "submenu": [inconsolata, proggy, scpro]})
+            self.context_options.append({ "name": "language", "submenu": ["de", "en", "es", "fr", "pt", "ru"] })
+            self.context_options.append({"name": "style", "submenu": ["abap", "algol_nu", "arduino", "autumn", "borland", "colorful", "default", "emacs", "friendly", "fruity", "igor", "inkpot", "lovelace", "manni", "monokai", "murphy", "native", "pastie", "perldoc", "rainbow_dash", "rrt", "sas", "tango", "vim", "vs", "xcode"] })
+            # also present but problematic styles:
+            # "paraiso_dark", "paraiso_light", "stata_dark", "stata_light", "solarized", "trac", "bw", "algol", 
+            def context_menu_handler(pick):
+                if pick != "":
+                    if pick[0] == "language":
+                        self.view.data.set_format(language=pick[1])
+                    elif pick[0] == "style":
+                        self.view.data.set_format(style=pick[1])
+                    elif pick[0] == "font":
+                        self.view.set_font(pick[1:])
+                    self.view.parse(force=True)
+                    renpy.redraw(self, 0)
+                    devlog.info(pick)
+                return ""
+            self.context_menu_handler = context_menu_handler
 
         def render(self, width, height, st, at):
             """ draw the cursor or the selection """
@@ -654,18 +674,6 @@ init -1700 python in _editor:
             renpy.restart_interaction()
 
         def add_context_menu(self):
-            def devlogger(pick):
-                if pick != "":
-                    if pick[0] == "language":
-                        self.view.data.set_format(language=pick[1])
-                    elif pick[0] == "style":
-                        self.view.data.set_format(style=pick[1])
-                    elif pick[0] == "font":
-                        self.view.set_font(pick[1:])
-                    self.view.parse(force=True)
-                    renpy.redraw(self, 0)
-                    devlog.info(pick)
-                return ""
 
             # TODO/FIXME: context menu doesn't have to follow screen/view font parameters
             cw = config.screen_width / TextView.get_max_char_per_line()
@@ -674,7 +682,7 @@ init -1700 python in _editor:
             Editor.context_menu=SelectionMenu(x=Editor.mousex, y=Editor.mousey,
                                               cw=cw, ch=ch, font=TextView.font['name'],
                                               font_size=TextView.font['size'], choices=self.context_options,
-                                              layer="master", handler=devlogger, options={'timeout':(1.5, 0.2)})
+                                              layer="master", handler=self.context_menu_handler, options={'timeout':(1.5, 0.2)})
 
 
     class SelectionMenu(renpy.Displayable):
@@ -798,14 +806,46 @@ init 1701 python in _editor:
         while renpy.get_screen(name):
             renpy.end_interaction("")
 
-    if config.developer or config.editor:
-        editor = Editor()
+    #if config.developer or config.editor:
+    editor = Editor()
 
-        style.default.hyperlink_functions = (hyperlink_styler_wrap, hyperlink_callback_wrap, None)
+    style.default.hyperlink_functions = (hyperlink_styler_wrap, hyperlink_callback_wrap, None)
 
     def get_font(name=None):
         name = name or TextView.font['name']
         return TextView.fonts[name]['dir'] + "/" + name + ".ttf"
+
+    def dev_add_editor(pick):
+        global editor
+        if pick is "Insert editor button here":
+            editor.view.insert(["""
+        if config.developer and _editor.editor:
+            textbutton _("Edit") action [_editor.editor.start(renpy.get_filename_line()), ShowMenu('_editor_main')]
+        """])
+
+    def dev_jump_helper(file_line=None, label=None, search=None, in_editor=False, purpose=None):
+        global editor
+        if file_line is None:
+            if label is None:
+                file_line = renpy.get_filename_line()
+            else:
+                renpy.jump(label)
+                return
+
+        if in_editor:
+            editor.start(file_line)
+            if search is not None:
+                editor.view.search_string=search
+            editor.view.search()
+            renpy.call_screen("_editor_main", context_menu=(purpose, dev_add_editor) if purpose is "Add editor button" else None)
+        else:
+            renpy.jump(file_line)
+
+    def dev_menu():
+        global dev_jump_options
+        renpy.say(who="narrator", what="Development menu", interact=False)
+        dev_jump_result = renpy.display_menu(dev_jump_options)
+        dev_jump_helper(**dev_jump_result)
 
 init 1702:
     style _editor_textbutton:
@@ -841,7 +881,7 @@ screen _editor_menu(selection):
         key "K_ESCAPE" action Function("renpy.hide_screen", "_editor_menu", layer=selection.layer)
 
 
-screen _editor_main:
+screen _editor_main(*args, **kwargs):
     layer "master"
     default editor = _editor.editor
     default view = editor.view
@@ -849,7 +889,7 @@ screen _editor_main:
         padding (0, 0)
         pos (0, 0)
         background view.data.get_color("background")
-        add editor
+        add editor(*args, **kwargs)
         text view.display() font _editor.get_font() size view.font['size'] justify False kerning 0.0 line_leading 0 newline_indent False #adjust_spacing False
         if view.show_errors:
             window:
