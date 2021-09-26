@@ -5,7 +5,7 @@ init -1700 python in _editor:
     from time import time
     import pygame
     from pygments import highlight
-    from visual_runtime_editor import *
+    from RVRE import *
     #import visual_runtime_editor
 
     # further specified when formatter is loaded (RenpyBuffer)

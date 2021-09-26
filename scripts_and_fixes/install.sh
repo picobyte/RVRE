@@ -11,12 +11,11 @@ python -m pip install --target python-packages pyperclip
 python -m pip install --target python-packages pygments==2.5.2
 python -m pip install --target python-packages pyspellchecker==0.5.6
 python -m pip install --target python-packages gitpython==2.1.11
-cd RVRE
 cp RVRE/scripts_and_fixes/pygments_filters_init_py_replacement python-packages/pygments/filters/__init__.py
 
-git submodule add  --depth 2 https://github.com/barrust/pyspellchecker.git ./pyspellchecker
+# for Russian and other language updates copy the languages files from https://github.com/barrust/pyspellchecker.git
+# to python-packages/spellchecker/resources/ (just click the files and save-as to the folder)
 
-python-packages/spellchecker/resources/
 cd -
 
 echo

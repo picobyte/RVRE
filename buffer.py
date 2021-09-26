@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-    visual_runtime_editor.buffer
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    RVRE.buffer
+    ~~~~~~~~~~~
 
     A buffer, either read-only or read-write
 
