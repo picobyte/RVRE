@@ -5,6 +5,7 @@ init -1700 python in _editor:
     from time import time
     import pygame
     from pygments import highlight
+    from pygments.styles import monokai
     from RVRE import *
     #import visual_runtime_editor
 
@@ -48,17 +49,17 @@ init -1700 python in _editor:
                      "20": (192.0, 49.1), # line length, height
                      "30": (128.0, 33.8),
                      "40": (96.0, 25.0),
-                     "dir": "RVRE/codeface/fonts/inconsolata"},
+                     "dir": "codeface/fonts/inconsolata"},
                  "ProggyClean": {
                      "20": (213.5, 63.6),
                      "30": (147.5, 43.3),
                      "40": (106.6, 32.7),
-                     "dir": "RVRE/codeface/fonts/proggy-clean"},
+                     "dir": "codeface/fonts/proggy-clean"},
                  "SourceCodePro-Regular": {
                      "20": (160.0, 41.4),
                      "30": (106.5, 27.7),
                      "40": (80.0, 21.0),
-                     "dir": "RVRE/codeface/fonts/source-code-pro"
+                     "dir": "codeface/fonts/source-code-pro"
                  }}
                      #"h": (30.000, -13.887, 2.673),
                      #"v": (35.967, -17.041, 2.654),
@@ -237,7 +238,6 @@ init -1700 python in _editor:
 
         def get_selected(self):
             cx, cy, CX, CY, selection = self.console.ordered_cursor_coordinates()
-            devlog.warn(str((cx, cy, CX, CY, selection)))
             if not selection:
                 return ""
             sx, sy, ex, ey = self.cursor2buf_coords(cx, cy, CX, CY)
@@ -420,9 +420,10 @@ init -1700 python in _editor:
             renpy.show_screen("_editor_find")
 
         def search(self):
+            """ Regex multiline search. `^' and `$' replaced so they also allow newline at start/end """
             if self.search_string is not "":
-                self.search_string = re.sub(r'(?!\\)(\\\\)*\$$', r'$1(?=\n)', self.search_string)
-                self.search_string = re.sub(r'^\^', r'(?<\n)', self.search_string)
+                self.search_string = re.sub(r'(?!\\)(\\\\)*\$$', r'$1(:?(?=\\n)|$)', self.search_string)
+                self.search_string = re.sub(r'^\^', r'(:?(?<=\\n)|^)', self.search_string)
                 sx, sy, ex, ey = self.cursor2buf_coords(*self.console.ordered_cursor_coordinates())
                 self.find_downstream = re.finditer(self.search_string, "\n".join(self.data[:sy-1]) + "\n" + self.data[sy][:(sx + len(self.search_string) - 1)])
                 self.find_upstream = re.finditer(self.search_string, self.data[sy][sx:] + "\n" + "\n".join(self.data[sy+1:]))
@@ -524,7 +525,6 @@ init -1700 python in _editor:
                         self.view.set_font(pick[1:])
                     self.view.parse(force=True)
                     renpy.redraw(self, 0)
-                    devlog.info(pick)
                 return ""
             self.context_menu_handler = context_menu_handler
 
@@ -568,7 +568,6 @@ init -1700 python in _editor:
 
         def sbc(self, lnr=None, cx=None, cy=None, CX=None, CY=None):
             """set buffer coordinates"""
-            devlog.info("sbc (%s, %s, %s, %s, %s)" % (lnr, cx, cy, CX, CY))
             self.view.lnr = self.view.lnr if lnr is None else lnr
             Editor.cx = Editor.cx if cx is None else cx
             Editor.cy = Editor.cy if cy is None else cy
@@ -613,14 +612,12 @@ init -1700 python in _editor:
                     Editor.CX, Editor.CY, Editor.cx, Editor.cy = Editor.cx, Editor.cy, Editor.CX, Editor.CY
                     Editor.is_mouse_pressed = False
 
-        def start(self, ctxt, offset=2, context_menu=None):
+        def start(self, ctxt, offset=2, search=None, context_menu=None):
             (fname, lnr) = ctxt
             if fname: # no fname indicates failure
                 if context_menu is None:
-                    devlog.warn("Default")
                     self.setup_default_context_menu()
                 else:
-                    devlog.warn("Editor_button")
                     self.context_options = [];
                     for opt in context_menu[0]:
                         self.context_options.append(opt)
@@ -638,6 +635,11 @@ init -1700 python in _editor:
                 self.view.rewrap()
                 if Editor.original_title is None:
                     Editor.original_title = config.window_title
+                if search is not None:
+                    self.view.search_string=search
+                    self.view.search()
+                if not renpy.get_screen("_editor_main"):
+                    renpy.call_screen("_editor_main")
                 renpy.redraw(self, 0)
 
         def exit(self, discard=False, apply=False):
@@ -739,7 +741,7 @@ init -1700 python in _editor:
                         pick.insert(0, self.id)
                         self.base_menu.end(pick)
                     else:
-                        self.base_menu.end("" if pick is "" else [self.id, pick])
+                        self.base_menu.end("" if pick == "" else [self.id, pick])
                 else:
                     renpy.end_interaction(self.handler(pick))
 
@@ -822,14 +824,14 @@ init 1701 python in _editor:
 
     def dev_add_editor(pick):
         global editor
-        if pick is "Add editor button":
+        if pick == "Add editor button":
             editor.view.insert(["""
         if config.developer and _editor.editor:
-            textbutton _("Edit") action [_editor.editor.start(renpy.get_filename_line()), ShowMenu('_editor_main')]
+            textbutton _("Edit") keysym "ctrl_K_e" action [Function("_editor.editor.start", renpy.get_filename_line()), ShowMenu('_editor_main')]
         """])
 
+
     def dev_jump_helper(file_line=None, label=None, search=None, in_editor=False, purpose=None):
-        global editor
         if file_line is None:
             if label is None:
                 file_line = renpy.get_filename_line()
@@ -838,19 +840,18 @@ init 1701 python in _editor:
                 return
 
         if in_editor:
-            editor.start(file_line, context_menu=((purpose,), dev_add_editor) if purpose is "Add editor button" else None)
-            if search is not None:
-                editor.view.search_string=search
-            editor.view.search()
-            renpy.call_screen("_editor_main")
+            global editor
+            context_menu=((purpose,), dev_add_editor) if purpose == "Add editor button" else None
+            editor.start(file_line, search=search, context_menu=context_menu)
         else:
-            renpy.jump(file_line)
+            renpy.renpy.warp.warp_spec = "%s:%d" % file_line
+            renpy.renpy.warp.warp()
 
-    def dev_menu():
-        global dev_jump_options
-        renpy.say(who="narrator", what="Development menu", interact=False)
-        dev_jump_result = renpy.display_menu(dev_jump_options)
-        dev_jump_helper(**dev_jump_result)
+    def renpy_jump_menu(*dev_jump_options):
+        if len(dev_jump_options) != 1 or dev_jump_options[1] != "exit loop":
+            renpy.say(who="narrator", what="Development menu", interact=False)
+            dev_jump_result = renpy.display_menu(dev_jump_options)
+            return dev_jump_helper(**dev_jump_result)
 
 init 1702:
     style _editor_textbutton:
@@ -900,7 +901,7 @@ screen _editor_main:
             window:
                 align (0.5, 1.0)
                 background Frame("gui/namebox.png", gui.namebox_borders, tile=gui.namebox_tile, xalign=gui.name_xalign)
-                text view.show_errors style "_editor_error"
+                text view.show_errors font _editor.get_font("Inconsolata-Regular") size 20 color "#f22"
 
         for keystr in sorted(view.keymap, key=len):
             key keystr action Function(view.handlekey, keystr)

@@ -1,3 +1,4 @@
+LICENCE.md
 fonts/proggy-clean
 fonts/inconsolata/
 fonts/hack/
