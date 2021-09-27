@@ -8,13 +8,13 @@ find game -type f -name "*.*py" -exec git add {} \+
 git commit -m 'Initial commit for my visual novel'
 ```
 
-In windows you can run these commands after installation of  https://gitforwindows.org/ which provides a commandline which should enable you to run this. msdos may when git is installed, but the find command is Linux (and Mac?) only. 
+In windows you can run these commands after installation of  https://gitforwindows.org/ which provides a commandline which should enable you to run this. The find command is Linux (and Mac?) command line only. 
 
 ```bash
 # add the RVRE as a submodule 
 git submodule add https://github.com/picobyte/RVRE game/RVRE
 scripts_and_fixes/install.sh
 ```
-For windows there's `scripts_and_fixes\install.bat` which should do the same.
+For Windows there's `scripts_and_fixes\install.bat` which should do the same.
 
-An example visual novel with RVRE included is https://github.com/picobyte/EditButton (RVRE actually started there).
+An example visual novel with RVRE included is https://github.com/picobyte/EditButton. The readme there discusses some of the features of the editor.
