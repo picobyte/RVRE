@@ -4,6 +4,7 @@ init -1700 python in _editor:
     import re
     from time import time
     import pygame
+    import pyperclip # to use external copy buffer
     from pygments import highlight
     from pygments.styles import monokai
     from RVRE import *
@@ -338,7 +339,6 @@ init -1700 python in _editor:
         def copy(self):
             selection = self.get_selected()
             if selection is not "":
-                import pyperclip # to use external copy buffer
                 pyperclip.copy(selection)
 
         def cut(self):
@@ -347,11 +347,13 @@ init -1700 python in _editor:
                 self.handlekey("DELETE")
 
         def insert(self, entries=None):
-            import pyperclip
+            """ entries: string, linesep split or pyperclipboard is used """
             self.update_cursor(force=True)
 
             if entries == None: # paste in absences of entries
                 entries = pyperclip.paste().split(os.linesep)
+            elif isinstance(entries, basestring):
+                entries = entries.split(os.linesep)
 
             cx, cy, CX, CY, selection = self.console.ordered_cursor_coordinates()
 
@@ -729,10 +731,10 @@ init 1701 python in _editor:
     def dev_add_editor(pick):
         global editor
         if pick == "Add editor button":
-            editor.view.insert(["""
+            editor.view.insert("""
         if config.developer and _editor.editor:
             textbutton _("Edit") keysym "ctrl_K_e" action [Function("_editor.editor.start", renpy.get_filename_line()), ShowMenu('_editor_main')]
-        """])
+        """)
 
     def dev_jump_helper(file_line=None, label=None, search=None, in_editor=False, purpose=None):
         if file_line is None:

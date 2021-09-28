@@ -20,7 +20,7 @@ In windows you can run these commands after installation of  https://gitforwindo
 git submodule add https://github.com/picobyte/RVRE game/RVRE
 
 #install
-game/RVRE/scripts_and_fixes/install.sh
+bash game/RVRE/scripts_and_fixes/install.sh
 ```
 For Windows there's `scripts_and_fixes\install.bat` which should do the same.
 
