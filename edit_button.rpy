@@ -640,8 +640,6 @@ init -1700 python in _editor:
                 if search is not None:
                     self.view.search_string=search
                     self.view.search()
-                if not renpy.get_screen("_editor_main"):
-                    renpy.call_screen("_editor_main")
                 renpy.redraw(self, 0)
 
         def exit(self, discard=False, apply=False):
@@ -720,7 +718,6 @@ init 1701 python in _editor:
         while renpy.get_screen(name):
             renpy.end_interaction("")
 
-    #if config.developer or config.editor:
     editor = Editor()
 
     style.default.hyperlink_functions = (hyperlink_styler_wrap, hyperlink_callback_wrap, None)
@@ -749,15 +746,15 @@ init 1701 python in _editor:
             global editor
             context_menu=((purpose,), dev_add_editor) if purpose == "Add editor button" else None
             editor.start(file_line, search=search, context_menu=context_menu)
+            renpy.call_screen("_editor_main")
         else:
             renpy.renpy.warp.warp_spec = "%s:%d" % file_line
             renpy.renpy.warp.warp()
 
     def renpy_jump_menu(*dev_jump_options):
-        if len(dev_jump_options) != 1 or dev_jump_options[1] != "exit loop":
-            renpy.say(who="narrator", what="Development menu", interact=False)
-            dev_jump_result = renpy.display_menu(dev_jump_options)
-            return dev_jump_helper(**dev_jump_result)
+        renpy.say(who="narrator", what="Development menu", interact=False)
+        dev_jump_result = renpy.display_menu(dev_jump_options)
+        return dev_jump_result if isinstance(dev_jump_result, basestring) else dev_jump_helper(**dev_jump_result)
 
 init 1702:
     style _editor_textbutton:
