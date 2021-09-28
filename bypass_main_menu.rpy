@@ -7,15 +7,16 @@ label main_menu:
         #config.quit_action = Quit(confirm=False)
 
         _editor.renpy_jump_menu(
-            # The first option is to set up the editor button. TODO: comment this first option after the edit button was added.
-            ("Add editor button: right click (mouse) between the yalign line and the first textbutton in screen quick_menu().", {
+            ("Just start", "exit loop"),
+            # Two options to enable the editor, you may want to remove these when done.
+            ("Add editor button to screen quick_menu.", {
                 "file_line": ("game/screens.rpy", 1),
+                "instructions": "right click (mouse) between the yalign line and the first textbutton in screen quick_menu().",
                 "search": "^screen\s+quick_menu\(",
                 "in_editor": True,
-                "purpose": "Add editor button"
+                "purpose": "editor button"
             }), # last line to comment.
-            ("Show main menu", "exit loop"),
-            ("Edit the options in this development jump menu.", {
+            ("Edit the options in this development menu.", {
                 "search": "^\s*_editor\.renpy_jump_menu\(",
                 "in_editor": True,
                 "file_line": ("game/RVRE/bypass_main_menu.rpy", 1),

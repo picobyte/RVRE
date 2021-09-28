@@ -686,16 +686,23 @@ init -1700 python in _editor:
             Editor.suggestion_menu=SelectionMenu(x=x, y=y, cw=cw, ch=ch, font=TextView.font['name'], font_size=TextView.font['size'], choices=choices, layer="transient", handler=replacer, options={'timeout':(1.5, 0.2)})
             renpy.restart_interaction()
 
-        def add_context_menu(self):
+        def add_context_menu(self, **kwargs):
 
             # TODO/FIXME: context menu doesn't have to follow screen/view font parameters
             cw = config.screen_width / TextView.get_max_char_per_line()
             ch = config.screen_height / TextView.get_max_lines_per_screen()
+            if 'type' in kwargs:
+                if kwargs['type'] == "editor":
+                    choices=self.context_options
+                    handler=self.context_menu_handler
+            else:
+                handler=None
+                choices=None
 
             Editor.context_menu=SelectionMenu(x=Editor.mousex, y=Editor.mousey,
                                               cw=cw, ch=ch, font=TextView.font['name'],
-                                              font_size=TextView.font['size'], choices=self.context_options,
-                                              layer="master", handler=self.context_menu_handler, options={'timeout':(1.5, 0.2)})
+                                              font_size=TextView.font['size'], choices=choices,
+                                              layer="master", handler=handler, options={'timeout':(1.5, 0.2)})
 
 
 init 1701 python in _editor:
@@ -734,31 +741,29 @@ init 1701 python in _editor:
 
     def dev_add_editor(pick):
         global editor
-        if pick == "Add editor button":
+        if pick == "editor button":
             editor.view.insert("""
         if config.developer and _editor.editor:
             textbutton _("Edit") keysym "ctrl_K_e" action [Function("_editor.editor.start", renpy.get_filename_line()), ShowMenu('_editor_main')]
         """)
 
-    def dev_jump_helper(file_line=None, label=None, search=None, in_editor=False, purpose=None):
+    def dev_jump_helper(file_line=None, label=None, search=None, in_editor=False, instructions=None, purpose=None, **kwargs):
         if file_line is None:
-            if label is None:
-                file_line = renpy.get_filename_line()
-            else:
+            if label is not None:
                 renpy.jump(label)
-                return
-
-        if in_editor:
+        elif in_editor:
             global editor
-            context_menu=((purpose,), dev_add_editor) if purpose == "Add editor button" else None
-            editor.start(file_line, search=search, context_menu=context_menu)
+            if purpose:
+                renpy.say(who="narrator", what=instructions)
+                kwargs['context_menu']=((purpose,), dev_add_editor)
+            editor.start(file_line, **kwargs)
             renpy.call_screen("_editor_main")
         else:
             renpy.renpy.warp.warp_spec = "%s:%d" % file_line
             renpy.renpy.warp.warp()
 
     def renpy_jump_menu(*dev_jump_options):
-        renpy.say(who="narrator", what="Development menu", interact=False)
+        renpy.say(who="narrator", what="Develer menu", interact=False)
         dev_jump_result = renpy.display_menu(dev_jump_options)
         return dev_jump_result if isinstance(dev_jump_result, basestring) else dev_jump_helper(**dev_jump_result)
 
@@ -768,7 +773,6 @@ init 1702:
         size 28
         color "#fff"
         hover_color "ff2"
-
 
 screen _editor_main:
     layer "master"
