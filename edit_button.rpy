@@ -458,10 +458,16 @@ init -1700 python in _editor:
             if chars is None:
                 renpy.notify("Not found")
             else:
-                Editor.cx = Editor.CX
-                Editor.cy = Editor.CY
+                Editor.cx, Editor.cy = Editor.CX, Editor.CY
+                # move to found text and place cursor(s) there
                 self.RIGHT(chars)
                 Editor.CX, Editor.CY = Editor.cx, Editor.cy
+                # place in middle of view
+                self.DOWN(int(TextView._max_lines / 2))
+                self.UP(int(TextView._max_lines / 2))
+                #correct cursor
+                Editor.CY, Editor.cx = Editor.cy, Editor.CX
+                # move to select searched text
                 self.RIGHT(m.end()-m.start())
                 renpy.redraw(self.console, 0)
 
