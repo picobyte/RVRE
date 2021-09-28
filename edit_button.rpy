@@ -91,6 +91,8 @@ init -1700 python in _editor:
             self.keymap = set(['mousedown_4', 'mousedown_5'])
             self._add_km(['UP', 'DOWN', 'PAGEUP', 'PAGEDOWN'], ['repeat_', 'shift_', 'repeat_shift_', ''])
             self._add_km(['HOME', 'END'], ['ctrl_'])
+            self.wrapped_buffer = []
+            self.wrap2buf = {}
             self.set_font(font or (TextView.font["name"], TextView.font["size"]))
 
         @staticmethod
@@ -130,10 +132,9 @@ init -1700 python in _editor:
 
         def rewrap(self):
             """ a copy of the buffer in view that is wrapped as shown in view """
-            self.wrapped_buffer = []
-            self.wrap2buf = {}
             atline = 0
             tot = 0
+            self.wrapped_buffer.clear()
             for line in self.data[self.lnr:min(self.lnr + TextView._max_lines, len(self.data))]:
                 wrap = renpy.text.extras.textwrap(line, TextView.get_max_char_per_line()) or ['']
 
