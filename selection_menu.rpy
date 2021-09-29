@@ -7,7 +7,7 @@ init -1700 python in _editor:
         # https://renpy.org/doc/html/cdd.html
         # https://lemmasoft.renai.us/forums/viewtopic.php?p=374053#p374053
         #https://lemmasoft.renai.us/forums/viewtopic.php?t=11910
-        required_init_args = {'x', 'y', 'cw', 'ch', 'font', 'font_size', 'choices', 'handler', 'layer'}
+        required_init_args = {'x', 'y', 'cw', 'ch', 'font', 'choices', 'handler', 'layer'}
         def __init__(self, id="", base_menu=None, options=None, **kwargs):
 
             for arg in self.required_init_args:
@@ -115,8 +115,8 @@ screen _editor_menu(selection):
                 textbutton (pick["name"] if isinstance(pick, (dict, renpy.python.RevertableDict)) else str(pick)):
                     padding (0, 0)
                     minimum (0, 0)
-                    text_font _editor.get_font(selection.font)
-                    text_size selection.font_size
+                    text_font selection.font.get_file()
+                    text_size selection.font.size
                     text_color "#fff"
                     text_hover_color "ff2"
                     hovered Function(selection.act, hovered=True)

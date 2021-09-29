@@ -11,7 +11,7 @@ init -1700 python in _editor:
 
 
     class RenPyBuffer(ReadWriteBuffer):
-        """ layer formating to display a text buffer in a ren'py screen """
+        """ layer formatting to display a text buffer in a ren'py screen """
         def __init__(self, language='en', style='monokai'):
             # lst=[{"sbc": {"lnr": None, "cx": None, "cy": None}}]
             # past = LogList(logger=devlog, lst=lst)
@@ -42,47 +42,9 @@ init -1700 python in _editor:
 
 
     class TextView(object):
-        # https://stackoverflow.com/questions/42014594/linear-scaling-between-2-font-sizes-using-calc-and-vw#42019122
-
-        # mono fonts only, ratios.
-        fonts = {"Inconsolata-Regular": {
-                     "20": (192.0, 49.1), # line length, height
-                     "30": (128.0, 33.8),
-                     "40": (96.0, 25.0),
-                     "dir": "codeface/fonts/inconsolata"},
-                 "ProggyClean": {
-                     "20": (213.5, 63.6),
-                     "30": (147.5, 43.3),
-                     "40": (106.6, 32.7),
-                     "dir": "codeface/fonts/proggy-clean"},
-                 "SourceCodePro-Regular": {
-                     "20": (160.0, 41.4),
-                     "30": (106.5, 27.7),
-                     "40": (80.0, 21.0),
-                     "dir": "codeface/fonts/source-code-pro"
-                 }}
-                     #"h": (30.000, -13.887, 2.673),
-                     #"v": (35.967, -17.041, 2.654),
-        # df <- data.frame(size=c(20, 30, 40), val=c(192.0, 128.0, 96.0))
-        # lm(formula = val ~ poly(size, degree=2), data = df)
-        #
-        # Coefficients:
-        #    (Intercept)  poly(size, degree = 2)1  poly(size, degree = 2)2
-        #         138.67                   -67.88                    13.06
-        #
-        # df2 <- data.frame(size=c(20, 30, 40), val=c(49.1, 33.8, 25.0))
-        # lm(formula = val ~ poly(size, degree=2), data = df2)
-        #
-        # Coefficients:
-        #    (Intercept)  poly(size, degree = 2)1  poly(size, degree = 2)2
-        #         35.967                  -17.041                    2.654
-
-        font = {"name": "Inconsolata-Regular", "size": 30}
-        #font = {"name": "ProggyClean", "size": 40}
-        #font = {"name": "SourceCodePro-Regular", "size": 40}
 
         """keeps track of horizontal position in text. Wrapping is not taken into account for position."""
-        def __init__(self, console, data, font=None, lnr=0, wheel_scroll_lines=3):
+        def __init__(self, console, data, font_name="Inconsolata-Regular", font_size=30, lnr=0, wheel_scroll_lines=3):
             self.data = data
             self.lnr = lnr
             self.console = console
@@ -93,31 +55,18 @@ init -1700 python in _editor:
             self._add_km(['HOME', 'END'], ['ctrl_'])
             self.wrapped_buffer = []
             self.wrap2buf = {}
-            self.set_font(font or (TextView.font["name"], TextView.font["size"]))
+            self.set_font(name=font_name, size=font_size)
 
-        @staticmethod
-        def get_max_char_per_line(name=None, size=None):
-            name = name or TextView.font['name']
-            size = size or TextView.font['size']
-            #h = TextView.fonts[name]["h"]
-            #return h[0] + h[1] * size + h[2] * size * size
-            return TextView.fonts[name][str(size)][0]
-
-        @staticmethod
-        def get_max_lines_per_screen(name=None, size=None):
-            name = name or TextView.font['name']
-            size = size or TextView.font['size']
-            return TextView.fonts[name][str(size)][1]
-
-        def set_font(self, font):
-            TextView.font['name'] = font[0]
-            TextView.font['size'] = font[1]
-            TextView._max_lines = int(TextView.get_max_lines_per_screen())
-            self.cbuflines = TextView._max_lines
+        def set_font(self, **kwargs):
+            self.font = Font(**kwargs)
+            self.cbuflines = self.font.max_lines
             self.parse()
 
         def _add_km(self, km, mod):
             self.keymap.update([m+'K_'+k for k in km for m in mod])
+
+        def get_char_width_height(self, w, h=None):
+            return (w/self.font.max_char_per_line, h/self.font.max_lines_per_screen)
 
         @property
         def line(self):
@@ -135,15 +84,15 @@ init -1700 python in _editor:
             atline = 0
             tot = 0
             self.wrapped_buffer.clear()
-            for line in self.data[self.lnr:min(self.lnr + TextView._max_lines, len(self.data))]:
-                wrap = renpy.text.extras.textwrap(line, TextView.get_max_char_per_line()) or ['']
+            for line in self.data[self.lnr:min(self.lnr + self.font.max_lines, len(self.data))]:
+                wrap = renpy.text.extras.textwrap(line, self.font.max_char_per_line) or ['']
 
                 offs = 0
                 for l in wrap:
                     offs += line.index(l, offs) - offs
                     self.wrap2buf[tot]=(offs, atline)
                     tot += 1
-                    if tot > TextView._max_lines:
+                    if tot > self.font.max_lines:
                         return
                     offs += len(l)
                     self.wrapped_buffer.append(l)
@@ -463,8 +412,8 @@ init -1700 python in _editor:
                 self.RIGHT(chars)
                 Editor.CX, Editor.CY = Editor.cx, Editor.cy
                 # place in middle of view
-                self.DOWN(int(TextView._max_lines / 2))
-                self.UP(int(TextView._max_lines / 2))
+                self.DOWN(self.font.half_a_screen)
+                self.UP(self.font.half_a_screen)
                 #correct cursor
                 Editor.CY, Editor.cx = Editor.cy, Editor.CX
                 # move to select searched text
@@ -530,7 +479,7 @@ init -1700 python in _editor:
                     elif pick[0] == "style":
                         self.view.data.set_format(style=pick[1])
                     elif pick[0] == "font":
-                        self.view.set_font(pick[1:])
+                        self.view.set_font(name=pick[1], size=pick[2])
                     self.view.parse(force=True)
                     renpy.redraw(self, 0)
                 return ""
@@ -540,8 +489,7 @@ init -1700 python in _editor:
             """ draw the cursor or the selection """
             R = renpy.Render(width, height)
             C = R.canvas()
-            dx = width / TextView.get_max_char_per_line()
-            dy = height / TextView.get_max_lines_per_screen()
+            dx, dy = self.view.get_char_width_height(width, height)
             selection = self.view.data.get_color("highlight")
             if Editor.cy == Editor.CY:
                 if Editor.CX == Editor.cx:
@@ -566,9 +514,14 @@ init -1700 python in _editor:
             self.view.show_errors = "" if do_show else None
             self.view.parse()
 
+        def get_screen_char_width_height(self):
+            w, h = (config.screen_width, config.screen_height)
+            return self.view.get_char_width_height(w, h)
+
         def _screen_to_cursor_coordinates(self, x, y):
-            Editor.max = int(x * TextView.get_max_char_per_line() / config.screen_width)
-            cy = int(y * TextView.get_max_lines_per_screen() / config.screen_height)
+            cw, ch = self.get_screen_char_width_height()
+            Editor.max = int(x / cw)
+            cy = int(y / ch)
 
             if cy >= self.view.nr_of_lines():
                 cy = self.view.nr_of_lines() - 1
@@ -667,11 +620,10 @@ init -1700 python in _editor:
             renpy.redraw(self, 0)
             Editor.is_mouse_pressed = False
 
-            cw = config.screen_width / TextView.get_max_char_per_line()
-            ch = config.screen_height / self.view.get_max_lines_per_screen()
+            cw, ch = self.get_screen_char_width_height()
 
             x = int(Editor.cx * cw)
-            if Editor.cy + 1 + len(choices) <= TextView._max_lines or Editor.cy - len(choices) < 0:
+            if Editor.cy + 1 + len(choices) <= self.view.font.max_lines or Editor.cy - len(choices) < 0:
                 y = int((1 + Editor.cy) * ch)
             else:
                 y = int((Editor.cy - len(choices)) * ch)
@@ -683,14 +635,13 @@ init -1700 python in _editor:
                     self.view.insert([pick])
                 return pick
 
-            Editor.suggestion_menu=SelectionMenu(x=x, y=y, cw=cw, ch=ch, font=TextView.font['name'], font_size=TextView.font['size'], choices=choices, layer="transient", handler=replacer, options={'timeout':(1.5, 0.2)})
+            Editor.suggestion_menu=SelectionMenu(x=x, y=y, cw=cw, ch=ch, font=self.view.font, choices=choices, layer="transient", handler=replacer, options={'timeout':(1.5, 0.2)})
             renpy.restart_interaction()
 
         def add_context_menu(self, **kwargs):
 
             # TODO/FIXME: context menu doesn't have to follow screen/view font parameters
-            cw = config.screen_width / TextView.get_max_char_per_line()
-            ch = config.screen_height / TextView.get_max_lines_per_screen()
+            cw, ch = self.get_screen_char_width_height()
             if 'type' in kwargs:
                 if kwargs['type'] == "editor":
                     choices=self.context_options
@@ -700,9 +651,9 @@ init -1700 python in _editor:
                 choices=None
 
             Editor.context_menu=SelectionMenu(x=Editor.mousex, y=Editor.mousey,
-                                              cw=cw, ch=ch, font=TextView.font['name'],
-                                              font_size=TextView.font['size'], choices=choices,
-                                              layer="master", handler=handler, options={'timeout':(1.5, 0.2)})
+                                              cw=cw, ch=ch, font=self.view.font,
+                                              choices=choices, layer="master",
+                                              handler=handler, options={'timeout':(1.5, 0.2)})
 
 
 init 1701 python in _editor:
@@ -713,8 +664,8 @@ init 1701 python in _editor:
             return hyperlink_styler(target)
 
         editor_error = renpy.style.Style(style.default)
-        editor_error.font = get_font()
-        editor_error.size = TextView.font['size']
+        editor_error.font = editor.view.font.get_file()
+        editor_error.size = editor.view.font.size
         editor_error.color = editor.view.data.get_color("error")
         editor_error.background = editor.view.data.get_color("error background")
         editor_error.hover_underline = True
@@ -734,10 +685,6 @@ init 1701 python in _editor:
     editor = Editor()
 
     style.default.hyperlink_functions = (hyperlink_styler_wrap, hyperlink_callback_wrap, None)
-
-    def get_font(name=None):
-        name = name or TextView.font['name']
-        return TextView.fonts[name]['dir'] + "/" + name + ".ttf"
 
     def dev_add_editor(pick):
         global editor
@@ -769,7 +716,7 @@ init 1701 python in _editor:
 
 init 1702:
     style _editor_textbutton:
-        font _editor.get_font("Inconsolata-Regular")
+        font _editor.Font.file_for("Inconsolata-Regular")
         size 28
         color "#fff"
         hover_color "ff2"
@@ -783,12 +730,12 @@ screen _editor_main:
         pos (0, 0)
         background view.data.get_color("background")
         add editor
-        text view.display() font _editor.get_font() size view.font['size'] justify False kerning 0.0 line_leading 0 newline_indent False #adjust_spacing False
+        text view.display() font view.font.get_file() size view.font.size justify False kerning 0.0 line_leading 0 newline_indent False #adjust_spacing False
         if view.show_errors:
             window:
                 align (0.5, 1.0)
                 background Frame("gui/namebox.png", gui.namebox_borders, tile=gui.namebox_tile, xalign=gui.name_xalign)
-                text view.show_errors font _editor.get_font("Inconsolata-Regular") size 20 color "#f22"
+                text view.show_errors font _editor.Font.file_for("Inconsolata-Regular") size 20 color "#f22"
 
         for keystr in sorted(view.keymap, key=len):
             key keystr action Function(view.handlekey, keystr)
