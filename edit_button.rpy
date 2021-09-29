@@ -573,6 +573,7 @@ init -1700 python in _editor:
         def start(self, ctxt, offset=2, search=None, context_menu=None):
             (fname, lnr) = ctxt
             if fname: # no fname indicates failure
+                renpy.loadsave.force_autosave()
                 if context_menu is None:
                     self.setup_default_context_menu()
                 else:
@@ -610,6 +611,8 @@ init -1700 python in _editor:
                 self.view.parse()
             elif apply:
                 self.view.data.save()
+                renpy.reload_script()
+                renpy.loadsave.load(renpy.loadsave.newest_slot())
 
         def add_suggestion_menu(self):
             self.select_word()
