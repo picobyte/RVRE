@@ -845,7 +845,7 @@ screen _editor_main:
         elif renpy.get_screen("_editor_find"):
             key 'mousedown_1' action Hide("_editor_find")
         else:
-            key 'mouseup_3' action Function(editor.add_context_menu)
+            key 'mouseup_3' action Function(editor.add_context_menu, type="editor")
         hbox:
             style_prefix "quick"
             align (0.5, 1.0)
