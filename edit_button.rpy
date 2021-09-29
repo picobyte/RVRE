@@ -548,9 +548,6 @@ init -1700 python in _editor:
             self.sbc()
 
         def event(self, ev, x, y, st):
-            if ev.type == pygame.MOUSEBUTTONDOWN:
-                end_all_screens_with_name("_editor_menu")
-                renpy.redraw(self, 0)
             if ev.type == pygame.MOUSEBUTTONDOWN and ev.button == 1:
                 Editor.cx, Editor.cy = self._screen_to_cursor_coordinates(x, y)
                 self.view.update_cursor()
